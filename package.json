@@ -1,0 +1,23 @@
+{
+  "name": "database-stats",
+  "version": "1.0.0",
+  "description": "A utility for checking the stats of a database",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.ibm.com/patelba/database-stats.git"
+  },
+  "keywords": [
+    "database",
+    "pouchDB"
+  ],
+  "dependencies": {
+    "pouchdb": "^5.4.5",
+    "abacus-debug": "0.0.6-dev.7"
+  },
+  "author": "Archan Patel",
+  "license": "ISC"
+}
