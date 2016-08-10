@@ -18,7 +18,13 @@
     "pouchdb": "^5.4.5",
     "abacus-debug": "0.0.6-dev.7",
     "influx": "^4.2.1",
-    "nano": "^6.2.0"
+    "nano": "^6.2.0",
+    "lodash": "^4.14.2"
+  },
+  "devDependencies": {
+    "mocha": "^3.0.0",
+    "chai": "3.5.0",
+    "sinon": "1.17.5"
   },
   "author": "Archan Patel",
   "license": "ISC"

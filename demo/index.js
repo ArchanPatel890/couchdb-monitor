@@ -16,12 +16,19 @@ const db = couch.use('testing');
 
 const sTime = 1300000000000;
 
-db.bulk([
-  {title: 'The Heart of Darkness', _id: 'k/abcde' + '/t/' + 1400000000000},
-  {title: 'The Old Man and the Sea', _id: 'k/efghi' + '/t/' + 1400000000000},
-  {title: 'The Sound and the Fury', _id: 'k/jklmno' + '/t/' + 1400000000000},
-  {title: 'The Brother Karamazov', _id: 'k/pqrst' + '/t/' + 1400000000000}
-]);
+db.bulk(
+  {
+    docs: [
+      {title: 'The Heart of Darkness', _id: 'k/abcde' + '/t/' + 1400000000000},
+      {title: 'The Old Man and the Sea', _id: 'k/efghi' + '/t/' + 1400000000000},
+      {title: 'The Sound and the Fury', _id: 'k/jklmno' + '/t/' + 1400000000000},
+      {title: 'The Brothers Karamazov', _id: 'k/pqrst' + '/t/' + 1400000000000}
+    ]
+  },
+  function(err, res) {
+    console.log(err);
+    console.log(res);
+});
 
 db.bulk([
   {title : 'Lisa Says', _id: 't/' + Date.now() + '/k/kkefhcfd'},
@@ -39,5 +46,9 @@ keys.forEach(function(key, index, array) {
   });
 });*/
 
-const dbmon = monitor(dbUrl);
-monitor.getStats(couch, 'testing').then((res) => console.log(res));
+monitor.getStats(couch)
+  .then((res) => {
+    console.log(res);
+    const influx = monitor.createInfluxClient('localhost', 3000, 'user', 'pass');
+    pollStats(couch, influx);
+  });
