@@ -47,6 +47,11 @@ const createInfluxClient = (host, port, user, pass, database) => {
   return client;
 }
 
+const createCustomInflux = (options) => {
+  const client = influx(options);
+  return client;
+}
+
 /**
  * Returns a JSON object of the information of a pariticular DB.
  * @param  {Object} couch   nano client initialized with URL.
@@ -245,14 +250,49 @@ const pollStats = (source, sink) => new Promise(function(resolve, reject) {
     });
 });
 
+const startPolling = (influxOpt) => {
+  if (!this.POLL_INTERVAL || typeof this.POLL_INTERVAL != 'number') {
+    return;
+  }
+
+  let influx;
+  if(influxOpt) {
+    influx = createCustomInflux(influxOpt);
+  } else {
+    influx = createInfluxClient('localhost', 8086, process.env.username,
+                                process.env.password);
+  }
+
+  this.loopFunction = () => {
+    this.pollStats(this.dbclient, influx);
+  };
+
+  this.loop = setInterval(this.loopfunction, this.POLL_INTERVAL);
+}
+
+const continuePolling = () => {
+  if (this.POLL_INTERVAL && this.loopFunction) {
+    this.loop = setInterval(this.loopfunction, this.POLL_INTERVAL);
+  }
+}
+
+const stopPolling = () => {
+  clearInterval(this.loop);
+}
+
 const generateMonitor = (url, options) => {
   return {
+    POLL_INTERVAL: undefined,
+    POLL: false,
+    loopFunction: undefined,
+    loop: undefined,
     dbclient: createCouchClient(url, options),
     pollStats: pollStats,
     getStats: getStats,
     getInfo: getInfo,
-    //startPolling: () => {},
-    //stopPolling: () => {}
+    startPolling: startPolling,
+    continuePolling: continuePolling,
+    stopPolling: stopPolling
   }
 }
 
