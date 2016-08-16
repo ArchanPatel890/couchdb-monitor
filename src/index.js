@@ -14,9 +14,9 @@ const debug = require('abacus-debug')('database-stats');
 
 /**
  * createCouchClient initializes a couch client for requests.
- * @param  {string} url Database Url to use.
- * @param  {Object} options
- * @return {Object} Couch client used for requests.
+ * @param  {string} url       Database Url to use.
+ * @param  {Object} options   Options for the couchdb nano client.
+ * @return {Object} Couch     client used for requests.
  */
 const createCouchClient = (url, options) => {
   const opt = Object.assign({url: url}, options);
@@ -71,7 +71,7 @@ const getInfo = (couch, dbname) => new Promise(function(resolve, reject) {
 /**
  * Returns a JSOn object of the statistics of a couchdb server.
  * @param  {Object} couch couchdb nano client
- * @return {JSON}  _stats response of the server.
+ * @return {JSON}         _stats response of the server.
  */
 const getStats = (couch) => new Promise(function(resolve, reject) {
   debug('getStats() ...');
@@ -82,7 +82,7 @@ const getStats = (couch) => new Promise(function(resolve, reject) {
       reject(err);
     } else {
       debug('Retrieved db _stats.');
-      //debug(body);
+      debug(body);
       resolve(body);
     }
   });
@@ -91,7 +91,7 @@ const getStats = (couch) => new Promise(function(resolve, reject) {
 /**
  * Get the _active_tasks from a couchdb database.
  * @param  {Object} couch couchclient handle
- * @return {JSON}  The _active_tasks JSON object.
+ * @return {JSON}         The _active_tasks JSON object.
  */
 const getActiveTasks = (couch) => new Promise(function(resolve, reject) {
   couch.db.get('_active_tasks', (err, body) => {
@@ -130,6 +130,13 @@ const publishPointToInflux = (influxdb, seriesName, data, tags, opt) =>
   });
 });
 
+/**
+ * Publish a series of data to an InfluxDB
+ * @param  {Object} influxdb  influxDB client with database name
+ * @param  {Array} series     The array of series names
+ * @param  {Array} data       The array of data points
+ * @return {Object}           Success or failure message.
+ */
 const publishSeriesToInflux = (influxdb, series, data) =>
         new Promise(function(resolve, reject) {
   debug('Publishing to InfluxDB...');
@@ -145,6 +152,12 @@ const publishSeriesToInflux = (influxdb, series, data) =>
   });
 });
 
+/**
+ * Formats the _stats JSON response into arrays of data points.
+ * @param  {Object} stats   _stats JSON object from CouchDB
+ * @param  {Number} time    Either Data.now() or another representation of time.
+ * @return {Object}         Object with arrays of data point formatted for influx.
+ */
 const formatStatsData = (stats, time) => new Promise(function(resolve, reject) {
   debug('Formatting _stats data...');
   let data = {};
@@ -173,6 +186,12 @@ const formatStatsData = (stats, time) => new Promise(function(resolve, reject) {
   resolve(data);
 });
 
+/**
+ * Created DBs in an influxDB instance
+ * @param  {Object} influx   the InfluxDB client
+ * @param  {Array} names     Array of strings for the db names.
+ * @return {String}          Success or failure message.
+ */
 const createInfluxDBs = (influx, names) => new Promise(function(resolve,reject) {
   _.map(names, function(name) {
     influx.createDatabase(name, function(err, res) {
@@ -186,6 +205,13 @@ const createInfluxDBs = (influx, names) => new Promise(function(resolve,reject) 
   resolve('Created DBs.');
 });
 
+/**
+ * Requests the CouchDB instance for _stats, and then publishes the results to
+ * the provided sink influxDB.
+ * @param  {Object} source nano couchDB handle
+ * @param  {Object} sink   influxDB handle
+ * @return {Object}        Success of failure message.
+ */
 const pollStats = (source, sink) => new Promise(function(resolve, reject) {
   debug('pollStats() ...');
   getStats(source)
@@ -219,12 +245,14 @@ const pollStats = (source, sink) => new Promise(function(resolve, reject) {
     });
 });
 
-
-
 const generateMonitor = (url, options) => {
   return {
     dbclient: createCouchClient(url, options),
-    //pollStats: pollStats
+    pollStats: pollStats,
+    getStats: getStats,
+    getInfo: getInfo,
+    //startPolling: () => {},
+    //stopPolling: () => {}
   }
 }
 
