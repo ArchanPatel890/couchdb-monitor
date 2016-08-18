@@ -16,7 +16,7 @@ const db = couch.use('testing');
 
 const sTime = 1300000000000;
 
-/*db.bulk(
+db.bulk(
   {
     docs: [
       {title: 'The Heart of Darkness', _id: 'k/abcde' + '/t/' + 1400000000000},
@@ -50,4 +50,8 @@ const influx = monitor.createInfluxClient('localhost', 8086, 'user', 'pass');
 //sinflux.writePoint('test', {value: 0});
 //console.log("influx: " + JSON.stringify(influx));
 //monitor.createInfluxDBs(influx, ['couchdb', 'httpd', 'httpd_status_codes', 'httpd_request_methods']);
-monitor.pollStats(couch, influx);
+const dbmon = monitor(dbUrl);
+//console.log(dbmon);
+//console.log(dbmon.dbclient);
+//monitor.pollStats(dbmon.dbclient, influx);
+dbmon.startPolling(null, 1000);

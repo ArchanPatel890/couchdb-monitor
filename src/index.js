@@ -10,7 +10,7 @@
 const nano = require('nano');
 const influx = require('influx');
 const _ = require('lodash');
-const debug = require('abacus-debug')('database-stats');
+const debug = require('abacus-debug')('couchdb-monitor');
 
 /**
  * createCouchClient initializes a couch client for requests.
@@ -80,6 +80,7 @@ const getInfo = (couch, dbname) => new Promise(function(resolve, reject) {
  */
 const getStats = (couch) => new Promise(function(resolve, reject) {
   debug('getStats() ...');
+  debug(couch);
   couch.db.get('_stats', (err, body) => {
     if(err) {
       debug('Error retrieving db _stats from the server.');
@@ -250,50 +251,60 @@ const pollStats = (source, sink) => new Promise(function(resolve, reject) {
     });
 });
 
-const startPolling = (influxOpt) => {
-  if (!this.POLL_INTERVAL || typeof this.POLL_INTERVAL != 'number') {
-    return;
-  }
-
+const startPolling = (obj, influxOpt, pollInterval) => {
   let influx;
   if(influxOpt) {
     influx = createCustomInflux(influxOpt);
   } else {
-    influx = createInfluxClient('localhost', 8086, process.env.username,
-                                process.env.password);
+    influx = createInfluxClient('localhost', 8086, process.env.username || '',
+                                process.env.password || '');
   }
 
-  this.loopFunction = () => {
-    this.pollStats(this.dbclient, influx);
-  };
+  const db = obj.dbclient;
+  obj.loopFunction = () => {
+    pollStats(db, influx);
+  }
 
-  this.loop = setInterval(this.loopfunction, this.POLL_INTERVAL);
-}
-
-const continuePolling = () => {
-  if (this.POLL_INTERVAL && this.loopFunction) {
-    this.loop = setInterval(this.loopfunction, this.POLL_INTERVAL);
+  if (typeof pollInterval == 'number'); {
+      obj.POLL_INTERVAL = pollInterval;
+      obj.loop = setInterval(obj.loopFunction, pollInterval);
   }
 }
 
-const stopPolling = () => {
-  clearInterval(this.loop);
+const continuePolling = (obj, pollInterval) => {
+  if (obj.loopFunction) {
+    if (typeof pollInterval == 'number') {
+      obj.POLL_INTERVAL = pollInterval;
+      obj.loop = setInterval(obj.loopfunction, obj.POLL_INTERVAL);
+    }
+    else if (this.POLL_INTERVAL) {
+      obj.loop = setInterval(obj.loopfunction, obj.POLL_INTERVAL);
+    }
+  } else {
+    debug('loop function not available');
+  }
+}
+
+const stopPolling = (obj) => {
+  clearInterval(obj.loop);
 }
 
 const generateMonitor = (url, options) => {
-  return {
+  let mon = {
     POLL_INTERVAL: undefined,
-    POLL: false,
     loopFunction: undefined,
     loop: undefined,
     dbclient: createCouchClient(url, options),
     pollStats: pollStats,
     getStats: getStats,
     getInfo: getInfo,
-    startPolling: startPolling,
-    continuePolling: continuePolling,
-    stopPolling: stopPolling
-  }
+  };
+
+  mon.startPolling = startPolling.bind(undefined, mon);
+  mon.continuePolling = continuePolling.bind(undefined, mon);
+  mon.stopPolling = stopPolling.bind(undefined, mon);
+
+  return mon;
 }
 
 /*
